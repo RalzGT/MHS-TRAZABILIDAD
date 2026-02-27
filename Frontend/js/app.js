@@ -325,10 +325,20 @@ async function subirExcel() {
     const formData = new FormData(); formData.append("file", file);
     try {
         Swal.fire({ title: 'Procesando archivo...', text: 'Por favor espera mientras importamos los equipos a la base de datos.', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
-        const res = await fetch(`${API_BASE_URL}/activos/importar`, { method: 'POST', body: formData }); const data = await res.json();
-        if (res.ok && data.status === 'ok') { bootstrap.Modal.getInstance(document.getElementById('modalImportar')).hide(); fileInput.value = ''; Swal.fire("¡Importación Exitosa!", data.msg, "success").then(() => initAdmin()); } 
-        else { Swal.fire("Error de Formato", data.msg || "Verifica que las columnas coincidan con la plantilla.", "error"); }
-    } catch (e) { Swal.fire("Error", "No se pudo conectar al servidor para la importación.", "error"); }
+        const res = await fetch(`${API_BASE_URL}/activos/importar`, { method: 'POST', body: formData }); 
+        const data = await res.json();
+        
+        // EL CAMBIO ESTÁ AQUÍ: Le quitamos la exigencia de la palabra 'ok' y solo verificamos que el servidor haya respondido bien (res.ok)
+        if (res.ok) { 
+            bootstrap.Modal.getInstance(document.getElementById('modalImportar')).hide(); 
+            fileInput.value = ''; 
+            Swal.fire("¡Importación Exitosa!", data.msg || data.message || "Los equipos se subieron correctamente.", "success").then(() => initAdmin()); 
+        } else { 
+            Swal.fire("Error en la Carga", data.detail || data.msg || "Hubo un problema al subir los equipos.", "error"); 
+        }
+    } catch (e) { 
+        Swal.fire("Error", "No se pudo conectar al servidor para la importación.", "error"); 
+    }
 }
 
 function generarPDFTrazabilidad() {
