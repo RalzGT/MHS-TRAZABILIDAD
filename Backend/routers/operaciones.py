@@ -5,6 +5,8 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from models import ActivoStock, Asignacion, DevolucionRequest, DesechoRequest, EmpleadoCreate, MantenimientoCreate, ReporteFalla
 import openpyxl
 from io import BytesIO
+import pandas as pd
+import io
 
 router = APIRouter()
 
