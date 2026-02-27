@@ -24,7 +24,7 @@ async def importar_activos(file: UploadFile = File(...)):
         contents = await file.read()
         df = pd.read_excel(io.BytesIO(contents))
         
-        # Limpiamos los nombres de las columnas por si traen espacios extra desde el Excel
+        # Limpiamos los nombres de las columnas por si traen espacios extra
         df.columns = [c.strip() for c in df.columns]
         
         conn = get_db()
@@ -33,7 +33,7 @@ async def importar_activos(file: UploadFile = File(...)):
         activos_importados = 0
         
         for _, row in df.iterrows():
-            # 1. Insertamos el activo y pedimos que nos devuelva su nuevo ID
+            # 1. Insertamos el activo y pedimos el ID real
             query_activo = """
                 INSERT INTO activos (nombre, marca, modelo, serie, precio, estado)
                 VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
@@ -49,7 +49,7 @@ async def importar_activos(file: UploadFile = File(...)):
             
             nuevo_activo_id = cur.fetchone()[0]
             
-            # 2. Insertamos el historial apuntando al ID que acabamos de crear
+            # 2. Insertamos el historial apuntando al ID correcto
             query_historial = """
                 INSERT INTO historial_activos (activo_id, detalle, fecha)
                 VALUES (%s, %s, CURRENT_TIMESTAMP)
@@ -61,7 +61,6 @@ async def importar_activos(file: UploadFile = File(...)):
             
             activos_importados += 1
         
-        # Guardamos todos los cambios en la base de datos de una sola vez
         conn.commit()
         cur.close()
         conn.close()
@@ -69,11 +68,11 @@ async def importar_activos(file: UploadFile = File(...)):
         return {"msg": f"Éxito: Se importaron {activos_importados} activos correctamente."}
         
     except Exception as e:
-        # Si algo falla, revertimos los cambios para no dejar datos a medias
         if 'conn' in locals():
             conn.rollback()
             conn.close()
-        raise HTTPException(status_code=500, detail=f"Error en la base de datos: {str(e)}")
+        # ESTE MENSAJE NOS CONFIRMARÁ SI EL SERVIDOR SE ACTUALIZÓ
+        raise HTTPException(status_code=500, detail=f"Error en BD (Backend Actualizado): {str(e)}")
 
 @router.get("/historial/{activo_id}")
 def get_historial(activo_id: int):
