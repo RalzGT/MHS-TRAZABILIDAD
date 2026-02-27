@@ -1,0 +1,44 @@
+:root { 
+    --primary-grad: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+    --accent: #3b82f6; --bg-body: #f3f4f6; --surface: #ffffff;
+}
+body { background: var(--bg-body); font-family: 'Poppins', sans-serif; color: #1f2937; overflow-x: hidden; }
+
+.login-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+.login-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 3rem; border-radius: 16px; width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border-top: 5px solid var(--accent); }
+.sidebar { width: 260px; height: 100vh; position: fixed; background: var(--primary-grad); color: white; z-index: 1000; display: flex; flex-direction: column; box-shadow: 4px 0 24px rgba(0,0,0,0.1); }
+.nav-link-custom { padding: 14px 24px; color: #cbd5e1; text-decoration: none; display: flex; align-items: center; transition: all 0.3s ease; border-left: 4px solid transparent; font-weight: 500; font-size: 0.95rem; cursor: pointer; }
+.nav-link-custom:hover { background: rgba(255,255,255,0.1); color: white; padding-left: 28px; }
+.nav-link-custom.active { background: rgba(255,255,255,0.15); color: #60a5fa; border-left: 4px solid #60a5fa; }
+.nav-link-custom.eco-active { background: rgba(16, 185, 129, 0.1); color: #34d399; border-left: 4px solid #34d399; }
+
+.main-content { margin-left: 260px; padding: 2.5rem; min-height: 100vh; }
+.stat-card { background: var(--surface); border-radius: 12px; padding: 1.5rem; border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: 0.3s; position: relative; overflow: hidden; color: white; }
+.stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
+.stat-card i.bg-icon { position: absolute; right: -10px; bottom: -10px; font-size: 6rem; opacity: 0.15; transform: rotate(-15deg); }
+
+.bg-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.bg-green { background: linear-gradient(135deg, #10b981, #059669); }
+.bg-orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.bg-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.bg-red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.bg-dark { background: linear-gradient(135deg, #374151, #111827); }
+
+.stat-value { font-size: 2.2rem; font-weight: 700; position: relative; z-index: 2; }
+.stat-label { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; position: relative; z-index: 2; }
+
+.table-scroll-container { max-height: 550px; overflow-y: auto; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.table thead th { position: sticky; top: 0; background: #f8fafc; z-index: 2; font-size: 0.75rem; color: #64748b; font-weight: 700; padding: 1rem; border-bottom: 2px solid #e2e8f0; }
+.table tbody td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+.table-hover tbody tr:hover { background-color: #f8fafc; transform: scale(1.002); transition: 0.1s; }
+.card-pro { background: var(--surface); border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+.d-none-force { display: none !important; }
+.notification-btn { position: relative; cursor: pointer; font-size: 1.5rem; color: #64748b; transition:0.2s; } .notification-btn:hover { color: var(--accent); }
+.notification-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; animation: pulse 2s infinite; }
+.timeline-item { border-left: 2px solid #e2e8f0; padding-left: 20px; margin-bottom: 20px; position: relative; }
+.timeline-item::before { content:''; position: absolute; left: -6px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+.badge-soft-success { background:#dcfce7; color:#166534; padding:5px 10px; border-radius:20px; font-size:0.75rem; font-weight:bold;}
+.badge-soft-warning { background:#fef9c3; color:#854d0e; padding:5px 10px; border-radius:20px; font-size:0.75rem; font-weight:bold;}
+.badge-soft-danger { background:#fee2e2; color:#991b1b; padding:5px 10px; border-radius:20px; font-size:0.75rem; font-weight:bold;}
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }

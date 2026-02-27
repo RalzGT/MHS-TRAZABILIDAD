@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>MHS Enterprise | Asset Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <div id="login-screen" class="login-screen">
+        <div class="login-card animate__animated animate__zoomIn">
+            <div class="text-center mb-4"><div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px; font-size: 2rem;"><i class="bi bi-buildings"></i></div><h3 class="fw-bold mt-2">MHS Enterprise</h3></div>
+            <div class="form-floating mb-3"><input type="text" id="user" class="form-control" placeholder="Usuario"><label>ID Usuario</label></div>
+            <div class="form-floating mb-4"><input type="password" id="pass" class="form-control" placeholder="Contraseña"><label>Contraseña</label></div>
+            <button onclick="login()" class="btn btn-primary w-100 py-3 fw-bold rounded-pill shadow-sm">INICIAR SESIÓN</button>
+        </div>
+    </div>
+
+    <div id="sidebar-div" class="sidebar animate__animated animate__slideInLeft" style="display:none;">
+        <div class="p-4 d-flex align-items-center gap-3 border-bottom border-secondary border-opacity-50">
+            <div class="bg-white text-primary rounded p-2"><i class="bi bi-grid-fill fs-4"></i></div><span class="fw-bold fs-5">MHS <span class="fw-light opacity-75">Assets</span></span>
+        </div>
+        <nav class="mt-4 flex-grow-1 px-2" id="sidebar-nav">
+            <div id="sidebar-admin-links">
+                <small class="px-3 text-white-50 fw-bold opacity-50" style="font-size:0.7rem;">PRINCIPAL</small>
+                <a onclick="vistaGeneral()" class="nav-link-custom active mt-2" id="nav-dash"><i class="bi bi-speedometer2 me-3"></i> Dashboard</a>
+                <a onclick="activarVistaBodega()" class="nav-link-custom" id="nav-bod"><i class="bi bi-box-seam me-3"></i> Bodega</a>
+                <a onclick="activarVistaEco()" class="nav-link-custom" id="nav-eco"><i class="bi bi-flower1 me-3"></i> Sostenibilidad</a>
+                <a onclick="activarVistaDesechos()" class="nav-link-custom" id="nav-desechos"><i class="bi bi-trash3 me-3"></i> Activos de Baja</a>
+                
+                <a onclick="activarVistaReportes()" class="nav-link-custom text-warning" id="nav-reportes"><i class="bi bi-exclamation-triangle me-3"></i> Reportes TI</a>
+                
+                <small class="px-3 text-white-50 fw-bold opacity-50 d-block mt-4" style="font-size:0.7rem;">GESTIÓN</small>
+                <a class="nav-link-custom" data-bs-toggle="modal" data-bs-target="#modalAsignar" onclick="cargarListas()"><i class="bi bi-arrow-left-right me-3"></i> Asignar</a>
+                <a class="nav-link-custom" data-bs-toggle="modal" data-bs-target="#modalStock"><i class="bi bi-plus-circle me-3"></i> Nuevo Ingreso</a>
+                
+                <a class="nav-link-custom text-success fw-bold" data-bs-toggle="modal" data-bs-target="#modalImportar"><i class="bi bi-file-earmark-spreadsheet me-3"></i> Importar Excel</a>
+                
+                <a class="nav-link-custom" data-bs-toggle="modal" data-bs-target="#modalEmp" onclick="cargarDeptos()"><i class="bi bi-people me-3"></i> Personal</a>
+                <a class="nav-link-custom" data-bs-toggle="modal" data-bs-target="#modalUsuarios" onclick="cargarUsuarios()"><i class="bi bi-shield-lock me-3"></i> Usuarios</a>
+            </div>
+            <div id="sidebar-operador-links" class="d-none">
+                <small class="px-3 text-white-50 fw-bold opacity-50" style="font-size:0.7rem;">PORTAL DE AUTOSERVICIO</small>
+                <a onclick="vistaOperador()" class="nav-link-custom active mt-2"><i class="bi bi-laptop me-3"></i> Mis Equipos</a>
+            </div>
+        </nav>
+        <div class="p-3 bg-black bg-opacity-25">
+            <div class="d-flex align-items-center mb-2 px-2">
+                <img src="https://ui-avatars.com/api/?name=User&background=random" class="rounded-circle me-2" width="35">
+                <div><div id="user-display-name" class="text-white small fw-bold">Usuario</div><div id="user-display-role" class="text-white-50 small" style="font-size: 0.75rem;">Rol</div></div>
+            </div>
+            <a href="javascript:location.reload()" class="nav-link-custom text-danger ps-2 mt-1 py-1"><i class="bi bi-power me-2"></i> Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <div id="main-content-div" class="main-content" style="display:none;">
+        <header class="d-flex justify-content-between align-items-end mb-5 animate__animated animate__fadeInDown">
+            <div><h2 class="fw-bold m-0 text-dark" id="pageTitle">Panel General</h2><p class="text-muted small m-0"><span id="currentDate"></span></p></div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="notification-btn" onclick="activarVistaReportes()" title="Alertas de Mantenimiento" id="bell-admin"><i class="bi bi-bell"></i><span id="badge-alert" class="notification-badge" style="display:none">0</span></div>
+                <button onclick="verCalendario()" class="btn btn-white border shadow-sm px-3 py-2 text-muted fw-bold" id="btn-cal-admin"><i class="bi bi-calendar3 me-2 text-primary"></i>Calendario</button>
+            </div>
+        </header>
+        
+        <div id="admin-view">
+            <div class="row g-4 mb-5 animate__animated animate__fadeInUp" id="stats-container"></div>
+            <div class="row g-4">
+                <div class="col-lg-4 animate__animated animate__fadeInLeft" id="chart-col">
+                    <div class="card-pro p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-4"><h6 id="chartTitle" class="fw-bold text-uppercase text-muted small m-0">Métricas</h6></div>
+                        <div style="height: 300px; position: relative;"><canvas id="myChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-8 animate__animated animate__fadeInRight" id="table-col">
+                    <div class="card-pro p-0 overflow-hidden">
+                        <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <h6 class="fw-bold m-0 fs-5" id="tableTitle">Inventario Activo</h6>
+                            <div class="d-flex gap-2">
+                                <input type="text" id="busc" onkeyup="cargarTabla()" class="form-control form-control-sm rounded-pill px-3" placeholder="🔍 Buscar equipo...">
+                                <button onclick="exportarExcel()" class="btn btn-sm btn-outline-success rounded-circle"><i class="bi bi-file-earmark-excel-fill"></i></button>
+                                <button onclick="exportarPDF()" class="btn btn-sm btn-outline-danger rounded-circle"><i class="bi bi-file-earmark-pdf-fill"></i></button>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-light d-flex gap-3 border-bottom">
+                            <div id="cont-filtros-general" class="d-flex gap-2"><select id="filtroEstado" onchange="cargarTabla()" class="form-select form-select-sm border-0 shadow-sm" style="width: 150px;"><option value="todos">Todos los Estados</option><option value="operativo">✅ Operativo</option><option value="mantenimiento">🔧 Mantenimiento</option><option value="obsoleto">⚠️ Obsoleto</option></select></div>
+                            <div id="cont-filtros-eco" class="d-flex gap-2 d-none-force"><select id="filtroEcoDepto" onchange="cargarTablaEco()" class="form-select form-select-sm border-0 shadow-sm" style="width: 150px;"><option value="todos">Todos los Deptos</option></select><select id="filtroEcoGasto" onchange="cargarTablaEco()" class="form-select form-select-sm border-success text-success fw-bold shadow-sm" style="width: 200px;"><option value="todos">🌎 Todo el Inventario</option><option value="alto">🔴 Alto Impacto</option><option value="bajo">🟢 Bajo Impacto</option></select></div>
+                        </div>
+                        
+                        <div class="table-scroll-container" id="primary-table-wrap">
+                            <table class="table table-hover align-middle mb-0" id="inventoryTable">
+                                <thead id="tableHead"><tr><th>Estado</th><th>Equipo</th><th>Serie</th><th>Responsable</th><th>Ubicación</th></tr></thead>
+                                <tbody id="tBody" class="bg-white"></tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="secondary-table-wrap" class="d-none-force">
+                            <div class="p-3 bg-light border-top border-bottom d-flex align-items-center gap-2">
+                                <i class="bi bi-clock-history text-warning fs-5"></i>
+                                <h6 class="fw-bold m-0 text-dark text-uppercase" style="font-size: 0.85rem;">Mantenimientos Preventivos Pendientes (>180 días)</h6>
+                            </div>
+                            <div class="table-scroll-container" style="max-height: 250px;">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                        <tr><th>Alerta</th><th>Equipo</th><th>Serie</th><th>Responsable</th><th>Acción</th></tr>
+                                    </thead>
+                                    <tbody id="tBody-preventivo" class="bg-white"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="operador-view" class="d-none">
+            <div class="row g-4" id="mis-equipos-container">
+                </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalCal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content border-0 shadow p-4"><div id="calendar"></div></div></div></div>
+    <div class="modal fade" id="modalAsignar" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-0"><h5 class="fw-bold">Asignar Recurso</h5></div><div class="modal-body p-4"><form onsubmit="asignar(event)"><label class="small fw-bold text-muted mb-1">Activo</label><select id="sa" class="form-select mb-3" required></select><label class="small fw-bold text-muted mb-1">Usuario / Empleado</label><select id="se" class="form-select mb-3" onchange="autoArea()" required></select><select id="sd" class="form-select mb-4 bg-light" disabled></select><button class="btn btn-primary w-100 py-2 fw-bold">PROCESAR ASIGNACIÓN</button></form></div></div></div></div>
+    <div class="modal fade" id="modalStock" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-0"><h5 class="fw-bold">Alta de Activo</h5></div><div class="modal-body p-4"><div class="row g-2"><div class="col-12"><input id="sn" class="form-control mb-2" placeholder="Nombre del Equipo"></div><div class="col-6"><input id="sm" class="form-control mb-2" placeholder="Marca"></div><div class="col-6"><input id="smo" class="form-control mb-2" placeholder="Modelo"></div><div class="col-6"><input id="ss" class="form-control mb-2" placeholder="Serie (S/N)"></div><div class="col-6"><input id="sp" type="number" class="form-control mb-2" placeholder="Costo ($)"></div><div class="col-12"><select id="sef" class="form-select mb-3"><option value="Nuevo">Nuevo</option><option value="Usado">Usado</option></select></div></div><button onclick="postStock()" class="btn btn-success w-100 py-2 fw-bold">GUARDAR EN BODEGA</button></div></div></div></div>
+    
+    <div class="modal fade" id="modalImportar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0"><h5 class="fw-bold text-success"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Importación Masiva</h5></div>
+                <div class="modal-body p-4 text-center">
+                    <p class="text-muted small mb-4">Sube un archivo de Excel (.xlsx) con las columnas en el siguiente orden estricto:<br><b class="text-dark">Nombre | Marca | Modelo | Serie | Precio | Estado</b></p>
+                    <button onclick="descargarPlantilla()" class="btn btn-sm btn-outline-secondary mb-4 rounded-pill px-4"><i class="bi bi-download me-1"></i> Descargar Plantilla Base</button>
+                    <input type="file" id="fileExcel" accept=".xlsx" class="form-control mb-4 border-success p-3">
+                    <button onclick="subirExcel()" class="btn btn-success w-100 py-2 fw-bold">PROCESAR ARCHIVO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="modalUsuarios" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-0"><h5 class="fw-bold">Control de Acceso</h5></div><div class="modal-body p-4"><div class="row g-2 mb-3 bg-light p-3 rounded"><div class="col-6"><input id="nu" class="form-control" placeholder="Usuario (Login)"></div><div class="col-6"><input id="np" type="password" class="form-control" placeholder="Clave"></div><div class="col-12"><input id="nn" class="form-control" placeholder="Nombre Completo (Real)"></div><div class="col-6"><select id="nr" class="form-select mb-2"><option value="operador">Operador</option><option value="admin">Admin</option></select></div><div class="col-6"><select id="nu-depto" class="form-select mb-2"><option value="">Departamento...</option></select></div><div class="col-12"><button onclick="postUsuario()" class="btn btn-dark w-100 btn-sm">Crear Usuario (y Empleado)</button></div></div><ul id="listaUsuarios" class="list-group list-group-flush" style="max-height:150px; overflow-y:auto;"></ul></div></div></div></div>
+    <div class="modal fade" id="modalDev" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-0"><h5 class="fw-bold text-danger">Retorno a Inventario</h5></div><div class="modal-body p-4"><input type="hidden" id="dev-id"><input type="hidden" id="dev-nom"><input type="hidden" id="dev-emp"><textarea id="dev-razon" class="form-control mb-3" placeholder="Motivo de devolución..." rows="3"></textarea><select id="dev-estado" class="form-select mb-4"><option value="Bueno">Funcional / Bueno</option><option value="Malo">Dañado / Para Baja</option></select><button onclick="procesarDevolucion()" class="btn btn-danger w-100 fw-bold">CONFIRMAR RETORNO</button></div></div></div></div>
+    <div class="modal fade" id="modalEmp" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-0"><h5 class="fw-bold">Nuevo Empleado Externo</h5></div><div class="modal-body p-4"><input id="en" class="form-control mb-3" placeholder="Nombre Completo"><select id="ed" class="form-select mb-4"></select><button onclick="postEmp()" class="btn btn-primary w-100">Registrar</button></div></div></div></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
