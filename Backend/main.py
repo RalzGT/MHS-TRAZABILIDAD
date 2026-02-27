@@ -6,12 +6,11 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permite peticiones de cualquier URL
+    allow_origins=["*"],  # Esto permite que Netlify pueda hablar con Render
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # Integrar todos los routers
 app.include_router(auth.router)
 app.include_router(usuarios.router)
