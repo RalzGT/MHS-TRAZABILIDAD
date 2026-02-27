@@ -157,7 +157,7 @@ async def importar_activos(file: UploadFile = File(...)):
         contents = await file.read()
         df = pd.read_excel(io.BytesIO(contents))
         
-        # Limpiamos los nombres de las columnas por si traen espacios extra
+        # Limpiamos las columnas
         df.columns = [c.strip() for c in df.columns]
         
         conn = get_db()
@@ -165,7 +165,7 @@ async def importar_activos(file: UploadFile = File(...)):
         activos_importados = 0
         
         for _, row in df.iterrows():
-            # 1. Insertamos el activo y pedimos a Neon el ID real generado
+            # 1. Insertamos el activo y pedimos el ID real
             query_activo = """
                 INSERT INTO activos (nombre, marca, modelo, serie, precio, estado)
                 VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
@@ -181,7 +181,7 @@ async def importar_activos(file: UploadFile = File(...)):
             
             nuevo_activo_id = cur.fetchone()[0]
             
-            # 2. Insertamos el historial usando el ID recién creado
+            # 2. Insertamos el historial usando el ID correcto
             query_historial = """
                 INSERT INTO historial_activos (activo_id, detalle, fecha)
                 VALUES (%s, %s, CURRENT_TIMESTAMP)
@@ -203,5 +203,5 @@ async def importar_activos(file: UploadFile = File(...)):
         if 'conn' in locals():
             conn.rollback()
             conn.close()
-        # Este mensaje nos confirmará que estamos corriendo la versión actualizada
-        raise HTTPException(status_code=500, detail=f"Error en BD (Backend Actualizado): {str(e)}")
+        # Este mensaje confirmará que corregimos el archivo correcto
+        raise HTTPException(status_code=500, detail=f"Error en BD Corregida: {str(e)}")
