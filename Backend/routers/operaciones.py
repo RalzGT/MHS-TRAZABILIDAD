@@ -117,7 +117,7 @@ async def importar_excel_real(file: UploadFile = File(...)):
         # 1. Limpiamos las columnas
         df.columns = [c.strip() for c in df.columns]
         
-        # 2. Eliminamos las "filas fantasma" (filas que Excel cree que existen pero no tienen Nombre)
+        # 2. Eliminamos las "filas fantasma"
         df = df.dropna(subset=['Nombre'])
         
         conn = get_db()
@@ -125,20 +125,19 @@ async def importar_excel_real(file: UploadFile = File(...)):
         activos_importados = 0
         
         for _, row in df.iterrows():
-            # 3. Protegemos cada celda por si dejaste alguna en blanco en tu Excel
+            # 3. Protegemos cada celda
             nombre = str(row['Nombre']).strip()
             marca = str(row['Marca']).strip() if pd.notna(row['Marca']) else "N/A"
             modelo = str(row['Modelo']).strip() if pd.notna(row['Modelo']) else "N/A"
             serie = str(row['Serie']).strip() if pd.notna(row['Serie']) else "S/N"
             estado_fisico = str(row['Estado']).strip() if pd.notna(row['Estado']) else "Bueno"
             
-            # Protección especial para el precio (evita que explote si hay texto oculto)
             try:
                 precio = float(row['Precio']) if pd.notna(row['Precio']) else 0.0
             except:
                 precio = 0.0
 
-            # 4. Inserción en la base de datos
+            # 4. Inserción del activo
             query_activo = """
                 INSERT INTO activos (nombre_equipo, marca, modelo, serie, precio_compra, estado_fisico, estado, fecha_ingreso)
                 VALUES (%s, %s, %s, %s, %s, %s, 'Disponible', CURRENT_DATE) RETURNING id
@@ -146,10 +145,10 @@ async def importar_excel_real(file: UploadFile = File(...)):
             cur.execute(query_activo, (nombre, marca, modelo, serie, precio, estado_fisico))
             nuevo_activo_id = cur.fetchone()[0]
             
-            # 5. Historial
+            # 5. Historial (AQUÍ ESTÁ LA SOLUCIÓN: Agregamos la columna 'accion' con el valor 'Registro')
             query_historial = """
-                INSERT INTO historial_activos (activo_id, detalle, fecha)
-                VALUES (%s, %s, CURRENT_TIMESTAMP)
+                INSERT INTO historial_activos (activo_id, accion, detalle, fecha)
+                VALUES (%s, 'Registro', %s, CURRENT_TIMESTAMP)
             """
             cur.execute(query_historial, (nuevo_activo_id, f"Carga masiva Excel. Serie: {serie}"))
             
@@ -166,7 +165,6 @@ async def importar_excel_real(file: UploadFile = File(...)):
             conn.rollback()
             conn.close()
             
-        # ¡ESTO ES CLAVE! Imprimimos el error crudo en Render para desenmascararlo
         print("========== ERROR GRAVE AL IMPORTAR EXCEL ==========")
         print(f"Detalle exacto: {str(e)}")
         print("===================================================")
