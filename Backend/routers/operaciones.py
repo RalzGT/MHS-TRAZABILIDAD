@@ -158,7 +158,7 @@ async def importar_excel_real(file: UploadFile = File(...)):
         cur.close()
         conn.close()
         
-        return {"msg": f"Éxito: Se importaron {activos_importados} activos"}
+        return {"message": f"Éxito: Se importaron {activos_importados} activos"}
         
     except Exception as e:
         if 'conn' in locals():
