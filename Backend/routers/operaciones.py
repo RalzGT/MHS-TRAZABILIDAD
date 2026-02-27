@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File
 from psycopg2.extras import RealDictCursor
 from database import get_db, registrar_evento
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from models import ActivoStock, Asignacion, DevolucionRequest, DesechoRequest, EmpleadoCreate, MantenimientoCreate, ReporteFalla
 import openpyxl
 from io import BytesIO
@@ -103,48 +104,58 @@ def resolver_falla(reporte_id: int):
 # NUEVO ENDPOINT: IMPORTACIÓN MASIVA DESDE EXCEL
 # =====================================================================
 @router.post("/activos/importar")
-async def importar_excel(file: UploadFile = File(...)):
-    if not file.filename.endswith('.xlsx'):
-        return {"status": "error", "msg": "El archivo debe ser un Excel (.xlsx)"}
+async def importar_excel_real(file: UploadFile = File(...)):
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="El archivo debe ser un Excel válido")
     
     try:
         contents = await file.read()
-        wb = openpyxl.load_workbook(filename=BytesIO(contents), data_only=True)
-        sheet = wb.active
+        df = pd.read_excel(io.BytesIO(contents))
+        
+        # Limpiamos las columnas
+        df.columns = [c.strip() for c in df.columns]
         
         conn = get_db()
         cur = conn.cursor()
+        activos_importados = 0
         
-        count = 0
-        # Se asume el siguiente orden de columnas en el Excel:
-        # Col A: Nombre | Col B: Marca | Col C: Modelo | Col D: Serie | Col E: Precio | Col F: Estado
-        for i, row in enumerate(sheet.iter_rows(values_only=True)):
-            if i == 0: continue # Saltar la primera fila (los encabezados)
+        for _, row in df.iterrows():
+            # 1. Insertamos el activo y pedimos el ID real a Neon
+            query_activo = """
+                INSERT INTO activos (nombre, marca, modelo, serie, precio, estado)
+                VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+            """
+            cur.execute(query_activo, (
+                str(row['Nombre']), 
+                str(row['Marca']), 
+                str(row['Modelo']), 
+                str(row['Serie']), 
+                float(row['Precio']), 
+                str(row['Estado'])
+            ))
             
-            # Solo insertamos si al menos hay nombre y número de serie
-            if row[0] and row[3]:
-                nombre = str(row[0])
-                marca = str(row[1]) if row[1] else "Genérica"
-                modelo = str(row[2]) if row[2] else "Genérico"
-                serie = str(row[3])
-                try: 
-                    precio = float(row[4])
-                except: 
-                    precio = 0.0
-                estado_fisico = str(row[5]) if row[5] else "Nuevo"
-                
-                cur.execute("""
-                    INSERT INTO activos (nombre_equipo, marca, modelo, serie, precio_compra, estado_fisico, fecha_ingreso, estado) 
-                    VALUES (%s, %s, %s, %s, %s, %s, CURRENT_DATE, 'Disponible') RETURNING id
-                """, (nombre, marca, modelo, serie, precio, estado_fisico))
-                
-                activo_id = cur.fetchone()[0]
-                registrar_evento(activo_id, "Ingreso", "Carga masiva por Excel")
-                count += 1
-                
+            nuevo_activo_id = cur.fetchone()[0]
+            
+            # 2. Insertamos el historial usando ese nuevo ID (Adiós error de clave foránea)
+            query_historial = """
+                INSERT INTO historial_activos (activo_id, detalle, fecha)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
+            """
+            cur.execute(query_historial, (
+                nuevo_activo_id, 
+                f"Carga masiva Excel. Serie: {row['Serie']}"
+            ))
+            
+            activos_importados += 1
+        
         conn.commit()
+        cur.close()
         conn.close()
-        return {"status": "ok", "msg": f"Se importaron {count} equipos correctamente."}
+        
+        return {"msg": f"Éxito: Se importaron {activos_importados} activos"}
         
     except Exception as e:
-        return {"status": "error", "msg": f"Error al procesar el archivo: {str(e)}"}
+        if 'conn' in locals():
+            conn.rollback()
+            conn.close()
+        raise HTTPException(status_code=400, detail=f"Error procesando Excel: {str(e)}")
