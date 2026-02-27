@@ -120,10 +120,12 @@ async def importar_excel_real(file: UploadFile = File(...)):
         activos_importados = 0
         
         for _, row in df.iterrows():
-            # 1. Insertamos el activo y pedimos el ID real a Neon
+            # ¡AQUÍ ESTÁ LA MAGIA! 
+            # Traducimos las columnas de tu BD (nombre_equipo, precio_compra, estado_fisico)
+            # y añadimos automáticamente la fecha_ingreso y el estado 'Disponible'
             query_activo = """
-                INSERT INTO activos (nombre, marca, modelo, serie, precio, estado)
-                VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+                INSERT INTO activos (nombre_equipo, marca, modelo, serie, precio_compra, estado_fisico, estado, fecha_ingreso)
+                VALUES (%s, %s, %s, %s, %s, %s, 'Disponible', CURRENT_DATE) RETURNING id
             """
             cur.execute(query_activo, (
                 str(row['Nombre']), 
@@ -131,12 +133,12 @@ async def importar_excel_real(file: UploadFile = File(...)):
                 str(row['Modelo']), 
                 str(row['Serie']), 
                 float(row['Precio']), 
-                str(row['Estado'])
+                str(row['Estado']) # Esto se guarda en estado_fisico (Nuevo, Usado, etc.)
             ))
             
             nuevo_activo_id = cur.fetchone()[0]
             
-            # 2. Insertamos el historial usando ese nuevo ID (Adiós error de clave foránea)
+            # Insertamos el historial
             query_historial = """
                 INSERT INTO historial_activos (activo_id, detalle, fecha)
                 VALUES (%s, %s, CURRENT_TIMESTAMP)
@@ -158,4 +160,5 @@ async def importar_excel_real(file: UploadFile = File(...)):
         if 'conn' in locals():
             conn.rollback()
             conn.close()
-        raise HTTPException(status_code=400, detail=f"Error procesando Excel: {str(e)}")
+        # Cambiamos a 500 para que si hay otro error, el Frontend nos deje leerlo
+        raise HTTPException(status_code=500, detail=f"Error procesando Excel: {str(e)}")
