@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from database import get_db
 
 router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__ident="2b")
 
 class LoginRequest(BaseModel):
     username: str
